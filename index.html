@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>00:00:60</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #eef2ff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .app {
+    background: white;
+    padding: 24px 34px;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    text-align: center;
+    width: min(420px, 95vw);
+  }
+
+  h2 {
+    margin-bottom: 14px;
+  }
+
+  .inputs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  input {
+    width: 90px;
+    padding: 8px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+  }
+
+  #display {
+    font-size: 70px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin: 10px 0;
+    background: #111827;
+    color: #fef9c3;
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  button {
+    padding: 12px 26px;
+    border-radius: 999px;
+    border: none;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 6px;
+    color: white;
+
+    transition:
+      transform 0.28s cubic-bezier(.25,.8,.25,1),
+      box-shadow 0.28s ease,
+      filter 0.28s ease;
+  }
+
+  button:hover {
+    transform: scale(1.20);
+    filter: brightness(1.15);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  }
+
+  button:active {
+    transform: scale(1.12);
+    filter: brightness(0.90);
+  }
+
+  /* 全新更漂亮渐变按钮 */
+  #startBtn {
+    background: linear-gradient(135deg, #0ea5e9, #10b981);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.35);
+  }
+
+  #pauseBtn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+  }
+
+  #resetBtn {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.35);
+  }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <h2>循环倒计时（无限）</h2>
+
+  <div class="inputs">
+    <div>
+      <label>秒数</label><br />
+      <input id="sec" type="number" value="60" min="1">
+    </div>
+  </div>
+
+  <div id="display">60</div>
+
+  <button id="startBtn">开始</button>
+  <button id="pauseBtn">暂停</button>
+  <button id="resetBtn">重置</button>
+</div>
+
+<script>
+let remaining = 0;
+let total = 0;
+let timer = null;
+let running = false;
+let paused = false;
+
+function formatHMS(seconds) {
+  const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor(seconds % 3600 / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function updateDisplay() {
+  display.textContent = remaining;
+  document.title = formatHMS(remaining);
+}
+
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "square";
+      osc.frequency.value = 900;
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const t = ctx.currentTime + i * 0.18;
+
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+
+      osc.start(t);
+      osc.stop(t + 0.15);
+    }
+  } catch (e) {}
+}
+
+function tick() {
+  remaining--;
+  updateDisplay();
+
+  if (remaining <= 0) {
+    beep();
+    remaining = total;
+    updateDisplay();
+  }
+}
+
+startBtn.onclick = () => {
+  if (!running) {
+    total = parseInt(sec.value) || 1;
+
+    if (!paused) {
+      remaining = total;
+    }
+
+    updateDisplay();
+
+    timer = setInterval(tick, 1000);
+    running = true;
+    paused = false;
+  }
+};
+
+pauseBtn.onclick = () => {
+  if (!running) return;
+  clearInterval(timer);
+  running = false;
+  paused = true;
+};
+
+resetBtn.onclick = () => {
+  clearInterval(timer);
+  running = false;
+  paused = false;
+
+  total = parseInt(sec.value) || 1;
+  remaining = total;
+
+  updateDisplay();
+};
+</script>
+
+</body>
+</html>
